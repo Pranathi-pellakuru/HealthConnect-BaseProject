@@ -35,19 +35,31 @@ object HealthConnectUtils {
     private val dateTimeFormatter: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
 
-    fun checkForHealthConnectInstalled(context: Context): Boolean {
+
+    fun checkForHealthConnectInstalled(context: Context):Int {
         val availabilityStatus =
             HealthConnectClient.getSdkStatus(context, "com.google.android.apps.healthdata")
-        if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
-            return false
+        when (availabilityStatus) {
+            HealthConnectClient.SDK_UNAVAILABLE -> {
+                // The Health Connect SDK is unavailable on this device at the time.
+                // This can be due to the device running a lower than required Android Version.
+                // Apps should hide any integration points to Health Connect in this case.
+            }
+            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> {
+                // The Health Connect SDK APIs are currently unavailable, the provider is either not installed
+                // or needs to be updated. You may choose to redirect to package installers to find a suitable APK.
+            }
+            HealthConnectClient.SDK_AVAILABLE -> {
+                // Health Connect SDK is available on this device.
+                // You can proceed with querying data from Health Connect using the client.
+                healthConnectClient = HealthConnectClient.getOrCreate(context)
+            }
         }
-        if (availabilityStatus == HealthConnectClient.SDK_AVAILABLE) {
-            healthConnectClient = HealthConnectClient.getOrCreate(context)
-        }
-        return true
+        return availabilityStatus
     }
 
-    suspend fun checkPermissionsAndRun(): Boolean {
+
+    suspend fun checkPermissions(): Boolean {
         val granted = healthConnectClient?.permissionController?.getGrantedPermissions()
         if (granted != null) {
             return granted.containsAll(PERMISSIONS)
@@ -56,13 +68,10 @@ object HealthConnectUtils {
     }
 
 
-    suspend fun readStepsForInterval(startDate: String?): List<DataRecord> {
-        val startTime: ZonedDateTime = if (startDate.isNullOrEmpty()) {
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(30)
-        } else {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]XXX")
-            LocalDateTime.parse(startDate, formatter).atZone(ZoneId.systemDefault()).plusSeconds(1)
-        }
+    suspend fun readStepsForInterval(interval : Long): List<DataRecord> {
+        val startTime: ZonedDateTime =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)
+
         val endTime = LocalDateTime.now().atZone(TimeZone.getDefault().toZoneId()).minusMinutes(1)
             .plusSeconds(59)
         val response =
@@ -137,19 +146,16 @@ object HealthConnectUtils {
                 )
                 trackTime = trackTime.plusDays(1).toLocalDate().atStartOfDay()
             }
-            Log.d("stepsData", stepsData.toString())
+            Log.d("Data", stepsData.toString())
             return stepsData
         }
         return emptyList()
     }
 
-    suspend fun readDistanceForInterval(startDate: String?): List<DataRecord> {
-        val startTime: ZonedDateTime = if (startDate.isNullOrEmpty()) {
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(30)
-        } else {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]XXX")
-            LocalDateTime.parse(startDate, formatter).atZone(ZoneId.systemDefault()).plusSeconds(1)
-        }
+    suspend fun readDistanceForInterval(interval: Long): List<DataRecord> {
+        val startTime: ZonedDateTime =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)
+
         val endTime = LocalDateTime.now().atZone(TimeZone.getDefault().toZoneId())
         val response =
             healthConnectClient?.aggregateGroupByPeriod(
@@ -222,19 +228,16 @@ object HealthConnectUtils {
                 )
                 trackTime = trackTime.plusDays(1)
             }
-            Log.d("stepsData", distanceData.toString())
+            Log.d("Data", distanceData.toString())
             return distanceData
         }
         return emptyList()
     }
 
-    suspend fun readMinsForInterval(startDate: String?): List<DataRecord> {
-        val startTime: ZonedDateTime = if (startDate.isNullOrEmpty()) {
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(30)
-        } else {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]XXX")
-            LocalDateTime.parse(startDate, formatter).atZone(ZoneId.systemDefault()).plusSeconds(1)
-        }
+    suspend fun readMinsForInterval(interval: Long): List<DataRecord> {
+        val startTime: ZonedDateTime =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)
+
         val endTime = LocalDateTime.now().atZone(TimeZone.getDefault().toZoneId())
         val response =
             healthConnectClient?.aggregateGroupByPeriod(
@@ -306,19 +309,16 @@ object HealthConnectUtils {
                 )
                 timeTrack = timeTrack.plusDays(1)
             }
-            Log.d("stepsData", minutesData.toString())
+            Log.d("Data", minutesData.toString())
             return minutesData
         }
         return emptyList()
     }
 
-    suspend fun readSleepSessionsForComplete(startDate: String?): List<DataRecord> {
-        val startTime: ZonedDateTime = if (startDate.isNullOrEmpty()) {
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(30)
-        } else {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]XXX")
-            LocalDateTime.parse(startDate, formatter).atZone(ZoneId.systemDefault()).plusSeconds(1)
-        }
+    suspend fun readSleepSessionsForInterval(interval: Long): List<DataRecord> {
+        val startTime: ZonedDateTime =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)
+
         val sleepData = mutableListOf<DataRecord>()
         val response =
             healthConnectClient?.readRecords(
@@ -377,7 +377,7 @@ object HealthConnectUtils {
             }
         }
 
-        Log.d("sleep data", sleepData.toString())
+        Log.d("data", sleepData.toString())
         return sleepData
     }
 
