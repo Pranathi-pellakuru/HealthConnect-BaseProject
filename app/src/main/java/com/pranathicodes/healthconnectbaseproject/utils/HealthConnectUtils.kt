@@ -59,6 +59,7 @@ object HealthConnectUtils {
     }
 
 
+    //Returns false when Health connect permissions are not given or returns true if permissions are already granted
     suspend fun checkPermissions(): Boolean {
         val granted = healthConnectClient?.permissionController?.getGrantedPermissions()
         if (granted != null) {
@@ -68,6 +69,7 @@ object HealthConnectUtils {
     }
 
 
+    //Function that gives total steps for each day for given interval
     suspend fun readStepsForInterval(interval : Long): List<DataRecord> {
         val startTime: ZonedDateTime =
             LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)
@@ -90,6 +92,7 @@ object HealthConnectUtils {
             response.sortedBy { it.startTime }
             var trackTime = startTime.toLocalDate().atStartOfDay()
             for (dailyResult in response) {
+                //Checking before every record if there are any days that are missed out and adding 0 value for all those days
                 if (dailyResult.startTime.isAfter(trackTime)) {
                     while (trackTime.isBefore(dailyResult.startTime)) {
                         stepsData.add(
@@ -127,6 +130,7 @@ object HealthConnectUtils {
                 )
                 trackTime = dailyResult.endTime
             }
+            //To add data as 0 for the days the data is not available after all the records and before the end date
             while (trackTime.isBefore(endTime.toLocalDateTime()) && Duration.between(trackTime,endTime).toMinutes()>1) {
                 stepsData.add(
                     DataRecord(
@@ -152,6 +156,7 @@ object HealthConnectUtils {
         return emptyList()
     }
 
+    //Function that gives total distance in miles for each day for given interval
     suspend fun readDistanceForInterval(interval: Long): List<DataRecord> {
         val startTime: ZonedDateTime =
             LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)
@@ -173,6 +178,7 @@ object HealthConnectUtils {
             response.sortedBy { it.startTime }
             var trackTime = startTime.toLocalDate().atStartOfDay()
             for (dailyResult in response) {
+                //Checking before every record if there are any days that are missed out and adding 0 value for all those days
                 if (dailyResult.startTime.isAfter(trackTime)) {
                     while (trackTime.isBefore(dailyResult.startTime)) {
                         distanceData.add(
@@ -208,6 +214,7 @@ object HealthConnectUtils {
                 )
                 trackTime = dailyResult.endTime
             }
+            //To add data as 0 for the days the data is not available after all the records and before the end date
             while (trackTime.isBefore(endTime.toLocalDateTime()) && Duration.between(trackTime,endTime).toMinutes()>1) {
                 distanceData.add(
                     DataRecord(
@@ -234,6 +241,7 @@ object HealthConnectUtils {
         return emptyList()
     }
 
+    //Function that gives total active minutes by user for each day in minutes for given interval
     suspend fun readMinsForInterval(interval: Long): List<DataRecord> {
         val startTime: ZonedDateTime =
             LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)
@@ -255,6 +263,7 @@ object HealthConnectUtils {
             response.sortedBy { it.startTime }
             var trackTime = startTime.toLocalDate().atStartOfDay()
             for (dailyResult in response) {
+                //Checking before every record if there are any days that are missed out and adding 0 value for all those days
                 if (dailyResult.startTime.isAfter(trackTime)) {
                     while (trackTime.isBefore(dailyResult.startTime)) {
                         minutesData.add(
@@ -290,6 +299,7 @@ object HealthConnectUtils {
                 )
                 trackTime = dailyResult.endTime
             }
+            //To add data as 0 for the days the data is not available after all the records and before the end date
             while (trackTime.isBefore(endTime.toLocalDateTime()) && Duration.between(trackTime,endTime).toMinutes()>1) {
                 minutesData.add(
                     DataRecord(
@@ -315,6 +325,7 @@ object HealthConnectUtils {
         return emptyList()
     }
 
+    //Gives the sleep records available in the interval
     suspend fun readSleepSessionsForInterval(interval: Long): List<DataRecord> {
         val startTime: ZonedDateTime =
             LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(interval-1)

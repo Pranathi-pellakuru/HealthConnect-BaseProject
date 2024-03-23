@@ -65,22 +65,26 @@ fun HealthConnectScreen() {
         mutableStateOf(false)
     }
 
+    //permission launcher for the health connect
     val requestPermissions =
         rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
             if (granted.containsAll(HealthConnectUtils.PERMISSIONS)) {
+                // Permissions successfully granted , continuing with reading the data from health connect
                 scope.launch {
                     mins = HealthConnectUtils.readMinsForInterval(interval).last().metricValue
                     steps = HealthConnectUtils.readStepsForInterval(interval).last().metricValue
-                    distance = HealthConnectUtils.readDistanceForInterval(interval).last().metricValue
+                    distance =
+                        HealthConnectUtils.readDistanceForInterval(interval).last().metricValue
                     sleepDuration =
                         HealthConnectUtils.readSleepSessionsForInterval(interval).last().metricValue
                 }
-                // Permissions successfully granted , continue with inserting or reading the data from health connect
             } else {
+                //permissions are rejected , redirect the users to health connect page to give permissions if the permissions page is not appearing
                 Toast.makeText(context, "Permissions are rejected", Toast.LENGTH_SHORT).show()
             }
         }
 
+    //checking for the Health connect availability in the device
     LaunchedEffect(key1 = true) {
         when (HealthConnectUtils.checkForHealthConnectInstalled(context)) {
             HealthConnectClient.SDK_UNAVAILABLE -> {
@@ -92,17 +96,21 @@ fun HealthConnectScreen() {
             }
 
             HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> {
+                //asking to install health connect if Health connect is supported but not installed
                 showHealthConnectInstallPopup = true
             }
 
             HealthConnectClient.SDK_AVAILABLE -> {
+                //checking for permissions since health connect is available
                 if (HealthConnectUtils.checkPermissions()) {
+                    //permissions are available , so continue performing actions on Health Connect
                     mins = HealthConnectUtils.readMinsForInterval(interval)[0].metricValue
                     steps = HealthConnectUtils.readStepsForInterval(interval)[0].metricValue
                     distance = HealthConnectUtils.readDistanceForInterval(interval)[0].metricValue
                     sleepDuration =
                         HealthConnectUtils.readSleepSessionsForInterval(interval).last().metricValue
                 } else {
+                    //asking for permissions from Health Connect since permissions are not given already
                     requestPermissions.launch(HealthConnectUtils.PERMISSIONS)
                 }
             }
@@ -180,6 +188,7 @@ fun HealthConnectScreen() {
 
 }
 
+//UI  component for displaying the metrics
 @Composable
 fun DataItem(
     label: String,
