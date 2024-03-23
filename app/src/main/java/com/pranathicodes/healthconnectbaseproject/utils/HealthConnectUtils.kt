@@ -127,7 +127,7 @@ object HealthConnectUtils {
                 )
                 trackTime = dailyResult.endTime
             }
-            while (trackTime.isBefore(endTime.toLocalDateTime())) {
+            while (trackTime.isBefore(endTime.toLocalDateTime()) && Duration.between(trackTime,endTime).toMinutes()>1) {
                 stepsData.add(
                     DataRecord(
                         metricValue = "0",
@@ -208,7 +208,7 @@ object HealthConnectUtils {
                 )
                 trackTime = dailyResult.endTime
             }
-            while (trackTime.isBefore(endTime.toLocalDateTime())) {
+            while (trackTime.isBefore(endTime.toLocalDateTime()) && Duration.between(trackTime,endTime).toMinutes()>1) {
                 distanceData.add(
                     DataRecord(
                         metricValue = "0",
@@ -253,23 +253,23 @@ object HealthConnectUtils {
         if (response != null) {
             val minutesData = mutableListOf<DataRecord>()
             response.sortedBy { it.startTime }
-            var timeTrack = startTime.toLocalDate().atStartOfDay()
+            var trackTime = startTime.toLocalDate().atStartOfDay()
             for (dailyResult in response) {
-                if (dailyResult.startTime.isAfter(timeTrack)) {
-                    while (timeTrack.isBefore(dailyResult.startTime)) {
+                if (dailyResult.startTime.isAfter(trackTime)) {
+                    while (trackTime.isBefore(dailyResult.startTime)) {
                         minutesData.add(
                             DataRecord(
                                 metricValue = "0",
                                 dataType = DataType.MINS,
-                                toDatetime = timeTrack.toLocalDate().atTime(LocalTime.MAX)
+                                toDatetime = trackTime.toLocalDate().atTime(LocalTime.MAX)
                                     .atZone(ZoneId.systemDefault()).format(dateTimeFormatter),
-                                fromDatetime = if (timeTrack.toLocalDate()
+                                fromDatetime = if (trackTime.toLocalDate()
                                         .isEqual(startTime.toLocalDate())
-                                ) startTime.format(dateTimeFormatter) else timeTrack.atZone(ZoneId.systemDefault())
+                                ) startTime.format(dateTimeFormatter) else trackTime.atZone(ZoneId.systemDefault())
                                     .format(dateTimeFormatter)
                             )
                         )
-                        timeTrack = timeTrack.plusDays(1).toLocalDate().atStartOfDay()
+                        trackTime = trackTime.plusDays(1).toLocalDate().atStartOfDay()
                     }
                 }
                 val totalMins =
@@ -288,26 +288,26 @@ object HealthConnectUtils {
                             .format(dateTimeFormatter)
                     )
                 )
-                timeTrack = dailyResult.endTime
+                trackTime = dailyResult.endTime
             }
-            while (timeTrack.isBefore(endTime.toLocalDateTime())) {
+            while (trackTime.isBefore(endTime.toLocalDateTime()) && Duration.between(trackTime,endTime).toMinutes()>1) {
                 minutesData.add(
                     DataRecord(
                         metricValue = "0",
                         dataType = DataType.MINS,
-                        toDatetime = if (timeTrack.toLocalDate()
+                        toDatetime = if (trackTime.toLocalDate()
                                 .isEqual(endTime.toLocalDate())
-                        ) endTime.format(dateTimeFormatter) else timeTrack.toLocalDate()
+                        ) endTime.format(dateTimeFormatter) else trackTime.toLocalDate()
                             .atTime(LocalTime.MAX).atZone(ZoneId.systemDefault())
                             .format(dateTimeFormatter),
-                        fromDatetime = if (timeTrack.toLocalDate()
+                        fromDatetime = if (trackTime.toLocalDate()
                                 .isEqual(startTime.toLocalDate())
                         )
                             startTime.format(dateTimeFormatter)
-                        else timeTrack.atZone(ZoneId.systemDefault()).format(dateTimeFormatter)
+                        else trackTime.atZone(ZoneId.systemDefault()).format(dateTimeFormatter)
                     )
                 )
-                timeTrack = timeTrack.plusDays(1)
+                trackTime = trackTime.plusDays(1)
             }
             Log.d("Data", minutesData.toString())
             return minutesData
